@@ -52,8 +52,9 @@ start_renderer()
     fi
 
     if [ "$SR_REASON" = restart ]; then
-        echo "[supervisor] $SR_NAME crash backoff 5s before restart" >> "$WLOG"
-        sleep 5
+        # Backoff is handled by the monitor loop so the state is re-verified
+        # after the wait; see monitor_renderers.
+        echo "[supervisor] $SR_NAME restart requested after crash backoff" >> "$WLOG"
     fi
     echo "[supervisor] starting $SR_NAME reason=$SR_REASON" >> "$WLOG"
     case "$SR_NAME" in
@@ -76,7 +77,15 @@ start_renderer()
                 exec "$H/maneuver_render" \
                     </dev/null >>/tmp/maneuver_render.log 2>&1
             ) &
-            cp_renderer_record_pid "$SR_NAME" "$!"
+            SR_PID=$!
+            # An unregistered renderer is unmanaged: no monitor owns its PID and
+            # a later tick would start a second instance. Registration failure
+            # is rare (/tmp write trouble), so stop the instance we just made.
+            if ! cp_renderer_record_pid "$SR_NAME" "$SR_PID"; then
+                echo "[supervisor] $SR_NAME pid=$SR_PID registration failed - stopping unmanaged instance" >> "$WLOG"
+                kill -15 "$SR_PID" 2>/dev/null
+                return 1
+            fi
             ;;
         *) return 1 ;;
     esac
@@ -110,6 +119,7 @@ monitor_renderers()
     cp_seed_renderer_pid_files
     start_renderer maneuver_render initial
 
+    MR_BACKOFF=0
     while [ -d "/proc/$MR_DIO_PID" ]; do
         if [ -e "$STOP_FILE" ]; then
             echo "[supervisor] monitor observed cleanup request" >> "$WLOG"
@@ -122,7 +132,21 @@ monitor_renderers()
             fi
             break
         fi
-        start_renderer maneuver_render restart
+        if ! cp_renderer_running maneuver_render; then
+            if [ "$MR_BACKOFF" != 1 ]; then
+                echo "[supervisor] maneuver_render crash backoff 5s before restart" >> "$WLOG"
+                MR_BACKOFF=1
+                sleep 5
+                # Re-evaluate after the backoff: dio may have exited, an explicit
+                # stop may have arrived, or the renderer may have been adopted
+                # by another generation during the wait.
+                continue
+            fi
+            MR_BACKOFF=0
+            start_renderer maneuver_render restart
+        else
+            MR_BACKOFF=0
+        fi
 
         sleep 2
         MR_LIVED_TICKS=`expr "$MR_LIVED_TICKS" + 1`

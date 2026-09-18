@@ -167,7 +167,17 @@ cp_renderer_pid_file()
 cp_renderer_record_pid()
 {
     CP_REC_FILE=`cp_renderer_pid_file "$1"` || return 1
-    echo "$2" > "$CP_REC_FILE"
+    # Atomic publish + read-back verification. A direct overwrite could leave a
+    # truncated/empty pid file on interruption; cp_renderer_running then treats
+    # the live renderer as absent and the monitor spawns a duplicate.
+    echo "$2" > "$CP_REC_FILE.tmp" || return 1
+    mv "$CP_REC_FILE.tmp" "$CP_REC_FILE" || {
+        rm -f "$CP_REC_FILE.tmp"
+        return 1
+    }
+    CP_REC_CHECK=
+    read CP_REC_CHECK < "$CP_REC_FILE"
+    [ -n "$CP_REC_CHECK" ] && [ "$CP_REC_CHECK" = "$2" ]
 }
 
 # Run at most once in a startup wrapper. This preserves renderers inherited from
