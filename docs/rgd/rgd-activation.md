@@ -134,17 +134,23 @@ reroute never reaches Java as a deactivation - any deactivation Java sees is gen
 The app does not build the iAP2 `RouteGuidanceUpdate`: iOS `CarPlay.framework` serializes it from the
 app's `CPNavigationSession`, and the on/off gate is `SourceSupportsRouteGuidance` (TLV `0x14`), set
 only when the app's map delegate implements `mapTemplateShouldProvideNavigationMetadata:`. From the
-decrypted IPAs (analysis carried over from mib2q-carplay-rgi-next `THIRD_PARTY_NAV_APPS.md`, not tested on the
-car):
+decrypted IPAs (analysis carried over from mib2q-carplay-rgi-next `THIRD_PARTY_NAV_APPS.md`):
 
 | App | Metadata gate | maneuverType | What reaches the cluster |
 |---|---|---|---|
 | Apple / Google Maps | implemented | set | full route guidance |
-| AMap | implemented while navigating | never set | session, ETA and distance; maneuvers are typeless |
+| AMap 16.25.0 / iOS 26.6 | implemented while navigating | never set | session, ETA and distance; maneuvers are typeless |
+| AMap, current / recent iOS | not re-decompiled | not re-decompiled | full route guidance with AMap's CarPlay guidance setting on `[car]` |
 | Waze | never implemented, so `SourceSupportsRouteGuidance = 0` | never set | nothing: `RouteGuidance` deactivates on `source_supports_rg == 0` |
 
 The payload carries no images - only semantics (type, junction shape, angles, distance, strings) -
 which is why [maneuver-mapping](maneuver-mapping.md) draws its own icons. Not fixable from the head unit.
+
+> [!NOTE]
+> **AMap works on the car (2026-09-25).** With a recent iOS and the CarPlay guidance setting enabled
+> inside AMap, its maneuvers reach the cluster and the HUD. The exact iOS version and the setting's
+> name are not recorded yet; the typeless row above is the old AMap 16.25.0 build. Waze still sends
+> nothing.
 
 ## 🤔 Open / to-verify
 

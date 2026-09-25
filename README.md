@@ -59,7 +59,8 @@ features below follow it automatically.
   arrow drawn over the cluster's own native map (the stock map stays; there is no CarPlay map on the
   cluster). The arrow fills as the turn approaches and blinks just before it, lane arrows appear under
   it, and the cluster also shows distance to the turn, arrival time and remaining distance. Needs an
-  app that sends CarPlay route guidance: Apple Maps and Google Maps do, Waze does not
+  app that sends CarPlay route guidance: Apple Maps and Google Maps do, AMap does with its CarPlay
+  guidance setting on, Waze does not
   ([details](docs/rgd/rgd-activation.md#-which-navigation-apps-send-route-guidance)).
 - **Route text in the Virtual Cockpit.** A text line names the exit sign or the next road (the
   current road when there is nothing else); long names scroll. Press **OK** (the left steering-wheel
@@ -210,9 +211,8 @@ By default only warnings and errors are recorded. To capture **everything** (lif
 touch /mnt/app/carplay_verbose        # survives reboot; /tmp/carplay_verbose does not
 ```
 
-The hook reads the marker once per `dio_manager` session, so it takes effect on the next phone
-connect. The Java patch reads it only when j9 starts, so for a verbose Java log use the `/mnt/app`
-marker and reboot. Remove the marker to return to the quiet default. Logs reset on reboot, so pull
+Hook and Java read the marker at every CarPlay session start, so it takes effect on the next phone
+connect - no reboot. Remove the marker to return to the quiet default. Logs reset on reboot, so pull
 them before restarting.
 
 For raw route-guidance packet dumps, rebuild the hook with `LOG_RGD_PACKET_RAW=1` (see [Build](#-build)).
@@ -220,8 +220,7 @@ For raw route-guidance packet dumps, rebuild the hook with `LOG_RGD_PACKET_RAW=1
 **No shell? Use M.I.B.** Copy `logging_MoreIncredibleBash/` to the card and run it like the installer.
 Each run saves everything to `<card>/carplay_logs/NNN/` and then creates `/tmp/carplay_verbose`: run it
 once, reconnect the phone and drive with CarPlay, run it again - the second folder holds the verbose
-session (hook and renderer; the Java log stays quiet until a reboot with `/mnt/app/carplay_verbose`).
-Attach that folder to a bug report.
+session. Attach that folder to a bug report.
 
 ## 📚 Documentation
 

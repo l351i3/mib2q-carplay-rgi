@@ -424,8 +424,8 @@ shared-memory objects that also live in `/tmp`), `sloginfo` of MMX and RCC, `pid
 the hook and jar listing, the two configs we patch and cores of `dio_manager`, `maneuver_render` and
 `smartphone_integrator`. A read-only card is remounted writable. The run ends by creating
 `/tmp/carplay_verbose`, so: run once, reconnect the phone and use CarPlay, run again to save the
-verbose session. The marker is in RAM and goes away on reboot; the Java log reads it only at j9 start,
-the hook on each phone connect. Nothing is deleted on the unit. Checked by `scripts/test_logging_mib.sh`.
+verbose session. The marker is in RAM and goes away on reboot; hook and Java log read it at every
+CarPlay session start. Nothing is deleted on the unit. Checked by `scripts/test_logging_mib.sh`.
 
 ## ⚠️ Traps
 

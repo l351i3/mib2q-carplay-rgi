@@ -82,6 +82,7 @@ public final class CarPlayApp {
             Log.e(TAG, "context is not IContext: " + context);
             return;
         }
+        Log.refreshLevel();
         synchronized (lock) {
             ensureLifecycleWorkerLocked();
             /* ACTIVATING may be repeated for the same TMDevice.  Publishing the
